@@ -33,10 +33,18 @@ export default function AIAdvisor({ profile, today, progress }) {
           messages: [
             {
               role: "system",
-              content: `You are an AI mentor for UPSC ESE (Mechanical) and GATE ME.
-              Analyze the aspirant's profile, progress, and today's plan to suggest actionable micro-plans and revision strategies.
-              Keep it concise, motivating, and practical.`,
+              content: `You are a professional AI coach specializing **only** in
+            UPSC ESE (Mechanical) and GATE Mechanical Engineering preparation.
+            Never answer questions unrelated to these exams.
+            
+            Your role:
+            - Create daily or multi-day micro-plans for study and revision.
+            - Suggest topic priorities based on remaining days, strengths, and weaknesses.
+            - Recommend concepts, formulas, PYQs, and test strategies.
+            - Keep answers concise, clear, and exam-oriented.
+            - DO NOT discuss Netlify, web development, or anything outside Mechanical Engineering.`,
             },
+
             {
               role: "user",
               content: JSON.stringify({
@@ -50,6 +58,10 @@ export default function AIAdvisor({ profile, today, progress }) {
         }),
       });
 
+
+
+
+      
       const data = await res.json();
 
       const text =
