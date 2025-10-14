@@ -1,22 +1,40 @@
 // Secure serverless proxy to OpenRouter
-// Do NOT hardcode API keys — set OPENROUTER_API_KEY in Netlify Environment Variables
+// Uses OPENROUTER_API_KEY from Netlify environment variables
 
 export default async (event) => {
   try {
-    const body = JSON.parse(event.body || "{}");
-    const { messages = [], model = "openai/gpt-4o-mini", max_tokens = 350 } = body;
-
-    if (!process.env.OPENROUTER_API_KEY) {
-      return new Response(JSON.stringify({ error: "Missing OPENROUTER_API_KEY" }), { status: 500 });
+    // 🧠 Handle both string and object bodies safely
+    let body = {};
+    if (typeof event.body === "string") {
+      try {
+        body = JSON.parse(event.body);
+      } catch (err) {
+        console.error("JSON parse error:", err);
+      }
+    } else if (typeof event.body === "object" && event.body !== null) {
+      body = event.body;
     }
 
-    // fallback if frontend sends empty messages
+    const {
+      messages = [],
+      model = "openai/gpt-4o-mini",
+      max_tokens = 350,
+    } = body || {};
+
+    if (!process.env.OPENROUTER_API_KEY) {
+      return new Response(
+        JSON.stringify({ error: "Missing OPENROUTER_API_KEY" }),
+        { status: 500 }
+      );
+    }
+
+    // Fallback message if messages array is empty
     const finalMessages =
       messages && messages.length
         ? messages
-        : [{ role: "user", content: "Hello! This is a test from the Netlify function." }];
+        : [{ role: "user", content: "Hello from Netlify!" }];
 
-    console.log("Calling OpenRouter with", finalMessages.length, "messages");
+    console.log("Final messages to send:", finalMessages);
 
     const r = await fetch("https://openrouter.ai/api/v1/chat/completions", {
       method: "POST",
@@ -34,9 +52,9 @@ export default async (event) => {
     });
 
     const data = await r.json();
-    console.log("Response from OpenRouter:", data);
 
     if (!r.ok) {
+      console.error("OpenRouter error:", data);
       return new Response(JSON.stringify({ error: data }), { status: r.status });
     }
 
@@ -45,7 +63,7 @@ export default async (event) => {
       status: 200,
     });
   } catch (e) {
-    console.error("Function error:", e);
+    console.error("Serverless function error:", e);
     return new Response(JSON.stringify({ error: e.message }), { status: 500 });
   }
 };
