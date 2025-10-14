@@ -1,0 +1,25 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --ring: 0 211 167;
+}
+
+* { -webkit-tap-highlight-color: transparent; }
+
+.card {
+  @apply rounded-2xl bg-panel/70 backdrop-blur border border-white/10 shadow-soft;
+}
+
+.btn {
+  @apply inline-flex items-center justify-center rounded-xl px-4 py-2 font-medium border border-white/10 bg-white/5 hover:bg-white/10 transition;
+}
+
+.input {
+  @apply w-full rounded-xl bg-white/5 border border-white/10 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary/40;
+}
+
+.badge {
+  @apply text-xs px-2 py-1 rounded-lg bg-white/10 border border-white/10;
+}
