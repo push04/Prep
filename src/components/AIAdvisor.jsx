@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useRef } from "react";
-import ReactMarkdown from "react-markdown";
 
 export default function AIAdvisor({ profile, today, progress }) {
   const [input, setInput] = useState("");
@@ -13,7 +12,6 @@ export default function AIAdvisor({ profile, today, progress }) {
   ]);
   const messagesEndRef = useRef(null);
 
-  // Auto-scroll chat to bottom
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [history]);
@@ -36,8 +34,8 @@ export default function AIAdvisor({ profile, today, progress }) {
             {
               role: "system",
               content: `You are an AI mentor for UPSC ESE (Mechanical) and GATE ME.
-              Analyze the aspirant's profile, progress, and today's plan to suggest actionable micro-plans and revision strategy.
-              Keep it motivational, structured, and under 180 words.`,
+              Analyze the aspirant's profile, progress, and today's plan to suggest actionable micro-plans and revision strategies.
+              Keep it concise, motivating, and practical.`,
             },
             {
               role: "user",
@@ -54,7 +52,6 @@ export default function AIAdvisor({ profile, today, progress }) {
 
       const data = await res.json();
 
-      // Handle multiple possible API shapes safely
       const text =
         data?.choices?.[0]?.message?.content ||
         data?.message?.content ||
@@ -68,7 +65,8 @@ export default function AIAdvisor({ profile, today, progress }) {
         ...h,
         {
           role: "assistant",
-          content: "❌ Network or API error — please retry in a few seconds.",
+          content:
+            "❌ Network or API error — please retry in a few seconds.",
         },
       ]);
     } finally {
@@ -86,18 +84,9 @@ export default function AIAdvisor({ profile, today, progress }) {
               m.role === "assistant" ? "bg-white/5" : "bg-white/0"
             }`}
           >
-            <ReactMarkdown
-              className="prose prose-invert prose-sm"
-              components={{
-                p: (props) => <p className="text-white/80 mb-1" {...props} />,
-                strong: (props) => <strong className="text-primary" {...props} />,
-                ul: (props) => (
-                  <ul className="list-disc list-inside text-white/80" {...props} />
-                ),
-              }}
-            >
+            <div className="text-white/80 whitespace-pre-line">
               {m.content}
-            </ReactMarkdown>
+            </div>
           </div>
         ))}
         <div ref={messagesEndRef} />
