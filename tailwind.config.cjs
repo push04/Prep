@@ -1,20 +1,23 @@
 /** @type {import('tailwindcss').Config} */
-module.exports = {
-  content: ["./index.html", "./src/**/*.{js,jsx}"],
+export default {
+  content: ["./index.html", "./src/**/*.{js,jsx,ts,tsx}"],
+  darkMode: "class",
   theme: {
     extend: {
       colors: {
-        primary: "#00D3A7",   // teal-mint accent
-        ink: "#0F172A",       // slate-900
-        panel: "#0B1220",     // dark panel
+        primary: "hsl(var(--color-primary))",
       },
-      boxShadow: {
-        soft: "0 8px 30px rgba(0,0,0,0.25)",
+      fontFamily: {
+        sans: ["Inter", "ui-sans-serif", "system-ui", "sans-serif"],
+        mono: ["JetBrains Mono", "ui-monospace", "SFMono-Regular", "Menlo", "monospace"],
       },
       borderRadius: {
-        xl2: "1rem",
-      }
+        "2xl": "1rem",
+      },
+      boxShadow: {
+        "soft": "0 10px 30px -15px rgba(0,0,0,.4)",
+      },
     },
   },
   plugins: [],
-}
+};
