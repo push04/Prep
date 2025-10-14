@@ -1,50 +1,47 @@
-// Secure serverless proxy to OpenRouter
-// Uses OPENROUTER_API_KEY from Netlify environment variables
-
+// netlify/functions/chat.js
 export default async (event) => {
   try {
-    // 🧠 Handle both string and object bodies safely
+    // Safely parse incoming request
     let body = {};
     if (typeof event.body === "string") {
       try {
         body = JSON.parse(event.body);
       } catch (err) {
         console.error("JSON parse error:", err);
+        return new Response(JSON.stringify({ error: "Invalid JSON body" }), { status: 400 });
       }
-    } else if (typeof event.body === "object" && event.body !== null) {
-      body = event.body;
+    } else {
+      body = event.body || {};
     }
 
     const {
       messages = [],
       model = "openai/gpt-4o-mini",
       max_tokens = 350,
-    } = body || {};
+    } = body;
 
     if (!process.env.OPENROUTER_API_KEY) {
+      return new Response(JSON.stringify({ error: "Missing OPENROUTER_API_KEY" }), { status: 500 });
+    }
+
+    if (!Array.isArray(messages) || messages.length === 0) {
       return new Response(
-        JSON.stringify({ error: "Missing OPENROUTER_API_KEY" }),
-        { status: 500 }
+        JSON.stringify({ error: "No messages provided to OpenRouter" }),
+        { status: 400 }
       );
     }
 
-    // Fallback message if messages array is empty
-    const finalMessages =
-      messages && messages.length
-        ? messages
-        : [{ role: "user", content: "Hello from Netlify!" }];
-
-    console.log("Final messages to send:", finalMessages);
+    console.log("🚀 Sending to OpenRouter:", messages.map(m => m.role));
 
     const r = await fetch("https://openrouter.ai/api/v1/chat/completions", {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${process.env.OPENROUTER_API_KEY}`,
+        "Authorization": `Bearer ${process.env.OPENROUTER_API_KEY}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
         model,
-        messages: finalMessages,
+        messages,
         temperature: 0.6,
         max_tokens,
         top_p: 0.9,
@@ -52,18 +49,14 @@ export default async (event) => {
     });
 
     const data = await r.json();
-
-    if (!r.ok) {
-      console.error("OpenRouter error:", data);
-      return new Response(JSON.stringify({ error: data }), { status: r.status });
-    }
+    console.log("✅ OpenRouter response:", data);
 
     return new Response(JSON.stringify(data), {
       headers: { "Content-Type": "application/json" },
-      status: 200,
+      status: r.ok ? 200 : r.status,
     });
   } catch (e) {
-    console.error("Serverless function error:", e);
+    console.error("❌ Serverless function error:", e);
     return new Response(JSON.stringify({ error: e.message }), { status: 500 });
   }
 };
