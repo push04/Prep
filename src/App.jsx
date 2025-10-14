@@ -26,10 +26,9 @@ export default function App() {
     mockScores: []
   })
 
-  const [curriculum, setCurriculum] = useLocalState('curriculum', initialCurriculum)
+  const [curriculum] = useLocalState('curriculum', initialCurriculum)
 
   const today = useMemo(() => generateDailyFocus(curriculum, progress), [curriculum, progress])
-  const [tab, setTab] = useState('plan')
 
   return (
     <div>
@@ -69,7 +68,12 @@ export default function App() {
               <LineChart className="w-5 h-5 text-primary" />
               <h2 className="text-lg font-semibold">Progress & Analytics</h2>
             </div>
-            <ProgressChart progress={progress} />
+            <ProgressChart
+              progress={progress}
+              onAddScore={(n) =>
+                setProgress((p) => ({ ...p, mockScores: [...(p.mockScores || []), n] }))
+              }
+            />
           </section>
 
           <section className="card p-5">
