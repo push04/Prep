@@ -24,29 +24,26 @@ export default function AIAdvisor() {
     setHistory((h) => [...h, { role: "user", content: message }]);
 
     try {
+      const payload = {
+        model: "openai/gpt-4o-mini",
+        messages: [
+          {
+            role: "system",
+            content: `You are a **Mechanical Engineering AI Mentor** for UPSC ESE and GATE ME.
+Only discuss Mechanical Engineering subjects.
+Never discuss coding, web development, or Netlify.
+Always give exam-oriented, day-wise microplans with formulas and PYQs.`,
+          },
+          { role: "user", content: message },
+        ],
+      };
+
+      console.log("🛰️ Sending to chat function:", payload);
+
       const res = await fetch("/.netlify/functions/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          model: "openai/gpt-4o-mini",
-          messages: [
-            {
-              role: "system",
-              content: `You are a **Mechanical Engineering AI Mentor** for UPSC ESE and GATE ME.
-Only discuss Mechanical Engineering subjects (Thermodynamics, Fluid Mechanics, SOM, Machine Design, TOM, Manufacturing, Heat Transfer, etc.).
-Never talk about Netlify, web development, or coding.
-Always give concise, exam-oriented study or revision plans.
-If asked for a plan, always answer in this format:
-
-Day 1 — ...
-Day 2 — ...
-Day 3 — ...
-
-Include key topics, formulas, and PYQ practice.`,
-            },
-            { role: "user", content: message },
-          ],
-        }),
+        body: JSON.stringify(payload),
       });
 
       const text = await res.text();
@@ -54,7 +51,7 @@ Include key topics, formulas, and PYQ practice.`,
       try {
         data = JSON.parse(text);
       } catch {
-        console.error("Invalid JSON:", text);
+        console.error("Invalid JSON from server:", text);
       }
 
       const reply =
@@ -97,15 +94,11 @@ Include key topics, formulas, and PYQ practice.`,
           placeholder="Ask: e.g. 'Give me a 3-day plan to strengthen Fluid Mechanics.'"
           value={input}
           onChange={(e) => setInput(e.target.value)}
-          onKeyDown={(e) => e.key === "Enter" && ask()}
+          onKeyDown={(e) => e.key === 'Enter' && ask()}
         />
         <button className="btn" onClick={ask} disabled={loading}>
           {loading ? "Thinking…" : "Ask"}
         </button>
-      </div>
-
-      <div className="text-xs text-white/50">
-        💡 Example: “Give me a 3-day plan to strengthen Fluid Mechanics.”
       </div>
     </div>
   );
