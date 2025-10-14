@@ -19,7 +19,6 @@ export default function AIAdvisor() {
   const ask = async () => {
     const message = input.trim();
     if (!message) return;
-
     setInput("");
     setLoading(true);
     setHistory((h) => [...h, { role: "user", content: message }]);
@@ -33,20 +32,17 @@ export default function AIAdvisor() {
           messages: [
             {
               role: "system",
-              content: `
-You are a professional AI coach specializing **only** in UPSC ESE (Mechanical) and GATE ME.
-Never answer questions about Netlify, coding, or web development.
+              content: `You are a **Mechanical Engineering AI Mentor** for UPSC ESE and GATE ME.
+Only discuss Mechanical Engineering subjects (Thermodynamics, Fluid Mechanics, SOM, Machine Design, TOM, Manufacturing, Heat Transfer, etc.).
+Never talk about Netlify, web development, or coding.
+Always give concise, exam-oriented study or revision plans.
+If asked for a plan, always answer in this format:
 
-Guidelines:
-- Always give exam-focused, subject-accurate responses.
-- When asked for a plan, structure it clearly:
+Day 1 — ...
+Day 2 — ...
+Day 3 — ...
 
-Day 1 — …
-Day 2 — …
-Day 3 — …
-
-- Cover formulas, PYQs, and revision strategy.
-- Keep answers concise, motivating, and technical.`,
+Include key topics, formulas, and PYQ practice.`,
             },
             { role: "user", content: message },
           ],
@@ -58,23 +54,21 @@ Day 3 — …
       try {
         data = JSON.parse(text);
       } catch {
-        console.error("Non-JSON response:", text);
+        console.error("Invalid JSON:", text);
       }
 
       const reply =
         data?.choices?.[0]?.message?.content ||
         data?.error?.message ||
+        text ||
         "⚠️ I couldn’t generate a response. Try again.";
 
       setHistory((h) => [...h, { role: "assistant", content: reply }]);
     } catch (err) {
-      console.error("AIAdvisor fetch error:", err);
+      console.error("AIAdvisor error:", err);
       setHistory((h) => [
         ...h,
-        {
-          role: "assistant",
-          content: "❌ Network or server error — please retry shortly.",
-        },
+        { role: "assistant", content: "❌ Network or server error — please retry." },
       ]);
     } finally {
       setLoading(false);
@@ -100,7 +94,7 @@ Day 3 — …
       <div className="flex gap-2">
         <input
           className="input"
-          placeholder="Ask: e.g. 'I’m weak in Fluid Mechanics — give me a 3-day plan'"
+          placeholder="Ask: e.g. 'Give me a 3-day plan to strengthen Fluid Mechanics.'"
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && ask()}
