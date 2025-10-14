@@ -1,32 +1,29 @@
 // netlify/functions/chat.js
-// Secure proxy to OpenRouter. Make sure OPENROUTER_API_KEY is set in Netlify → Environment variables.
-
 export default async (event) => {
   try {
-    // Parse body safely
-    let body = {};
-    if (typeof event.body === "string") {
-      try {
-        body = JSON.parse(event.body);
-      } catch {
-        console.error("Invalid JSON body");
-        return new Response(JSON.stringify({ error: "Invalid JSON body" }), { status: 400 });
-      }
-    } else {
-      body = event.body || {};
+    // Always read raw text body first
+    const rawBody = event.body || "";
+    if (!rawBody) {
+      console.error("❌ Empty request body");
+      return new Response(JSON.stringify({ error: "Empty request body" }), { status: 400 });
     }
 
-    const {
-      messages = [],
-      model = "openai/gpt-4o-mini",
-      max_tokens = 400,
-    } = body;
+    let body;
+    try {
+      body = JSON.parse(rawBody);
+    } catch (err) {
+      console.error("❌ JSON parse error:", err);
+      return new Response(JSON.stringify({ error: "Invalid JSON body" }), { status: 400 });
+    }
+
+    const { messages, model = "openai/gpt-4o-mini", max_tokens = 400 } = body;
 
     if (!process.env.OPENROUTER_API_KEY) {
       return new Response(JSON.stringify({ error: "Missing OPENROUTER_API_KEY" }), { status: 500 });
     }
 
     if (!Array.isArray(messages) || messages.length === 0) {
+      console.error("❌ No messages provided:", body);
       return new Response(JSON.stringify({ error: "No messages provided" }), { status: 400 });
     }
 
@@ -47,20 +44,19 @@ export default async (event) => {
       }),
     });
 
-    const raw = await response.text();
+    const text = await response.text();
     let data;
-
     try {
-      data = JSON.parse(raw);
+      data = JSON.parse(text);
     } catch {
-      console.error("❌ Failed to parse OpenRouter response:", raw);
+      console.error("❌ Invalid OpenRouter response:", text);
       return new Response(
-        JSON.stringify({ error: "Invalid response from OpenRouter", raw }),
+        JSON.stringify({ error: "Invalid response from OpenRouter", raw: text }),
         { status: 502 }
       );
     }
 
-    console.log("✅ OpenRouter reply received");
+    console.log("✅ OpenRouter replied successfully");
 
     return new Response(JSON.stringify(data), {
       headers: { "Content-Type": "application/json" },
