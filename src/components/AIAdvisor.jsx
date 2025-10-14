@@ -54,6 +54,7 @@ export default function AIAdvisor({ profile, today, progress }) {
                 query: message,
               }),
             },
+
           ],
         }),
       });
