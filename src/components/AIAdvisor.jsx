@@ -1,13 +1,13 @@
 import React, { useState, useEffect, useRef } from "react";
 
-export default function AIAdvisor({ profile, today, progress }) {
+export default function AIAdvisor() {
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [history, setHistory] = useState([
     {
       role: "assistant",
       content:
-        "👋 Hi! I’m your AI mentor. Tell me your current challenge — I’ll craft a smart plan or revision guide.",
+        "👋 Hi! I'm your Mechanical Engineering mentor for UPSC ESE and GATE ME. Ask me for study plans or topic guidance.",
     },
   ]);
   const messagesEndRef = useRef(null);
@@ -16,8 +16,8 @@ export default function AIAdvisor({ profile, today, progress }) {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [history]);
 
-  const ask = async (customPrompt) => {
-    const message = customPrompt || input.trim();
+  const ask = async () => {
+    const message = input.trim();
     if (!message) return;
 
     setInput("");
@@ -33,53 +33,47 @@ export default function AIAdvisor({ profile, today, progress }) {
           messages: [
             {
               role: "system",
-              content: `You are a professional AI coach specializing **only** in
-            UPSC ESE (Mechanical) and GATE Mechanical Engineering preparation.
-            Never answer questions unrelated to these exams.
-            
-            Your role:
-            - Create daily or multi-day micro-plans for study and revision.
-            - Suggest topic priorities based on remaining days, strengths, and weaknesses.
-            - Recommend concepts, formulas, PYQs, and test strategies.
-            - Keep answers concise, clear, and exam-oriented.
-            - DO NOT discuss Netlify, web development, or anything outside Mechanical Engineering.`,
-            },
+              content: `
+You are a professional AI coach specializing **only** in UPSC ESE (Mechanical) and GATE ME.
+Never answer questions about Netlify, coding, or web development.
 
-            {
-              role: "user",
-              content: JSON.stringify({
-                profile,
-                today,
-                progress,
-                query: message,
-              }),
-            },
+Guidelines:
+- Always give exam-focused, subject-accurate responses.
+- When asked for a plan, structure it clearly:
 
+Day 1 — …
+Day 2 — …
+Day 3 — …
+
+- Cover formulas, PYQs, and revision strategy.
+- Keep answers concise, motivating, and technical.`,
+            },
+            { role: "user", content: message },
           ],
         }),
       });
 
+      const text = await res.text();
+      let data;
+      try {
+        data = JSON.parse(text);
+      } catch {
+        console.error("Non-JSON response:", text);
+      }
 
-
-
-      
-      const data = await res.json();
-
-      const text =
+      const reply =
         data?.choices?.[0]?.message?.content ||
-        data?.message?.content ||
         data?.error?.message ||
         "⚠️ I couldn’t generate a response. Try again.";
 
-      setHistory((h) => [...h, { role: "assistant", content: text }]);
-    } catch (e) {
-      console.error("AIAdvisor fetch error:", e);
+      setHistory((h) => [...h, { role: "assistant", content: reply }]);
+    } catch (err) {
+      console.error("AIAdvisor fetch error:", err);
       setHistory((h) => [
         ...h,
         {
           role: "assistant",
-          content:
-            "❌ Network or API error — please retry in a few seconds.",
+          content: "❌ Network or server error — please retry shortly.",
         },
       ]);
     } finally {
@@ -94,12 +88,10 @@ export default function AIAdvisor({ profile, today, progress }) {
           <div
             key={i}
             className={`p-2 rounded-lg text-sm ${
-              m.role === "assistant" ? "bg-white/5" : "bg-white/0"
+              m.role === "assistant" ? "bg-white/5" : ""
             }`}
           >
-            <div className="text-white/80 whitespace-pre-line">
-              {m.content}
-            </div>
+            <div className="text-white/80 whitespace-pre-line">{m.content}</div>
           </div>
         ))}
         <div ref={messagesEndRef} />
@@ -108,12 +100,12 @@ export default function AIAdvisor({ profile, today, progress }) {
       <div className="flex gap-2">
         <input
           className="input"
-          placeholder="Ask for help, e.g. 'I’m weak in Machine Design, 20 days left…'"
+          placeholder="Ask: e.g. 'I’m weak in Fluid Mechanics — give me a 3-day plan'"
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && ask()}
         />
-        <button className="btn" onClick={() => ask()} disabled={loading}>
+        <button className="btn" onClick={ask} disabled={loading}>
           {loading ? "Thinking…" : "Ask"}
         </button>
       </div>
