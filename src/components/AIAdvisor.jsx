@@ -7,7 +7,7 @@ export default function AIAdvisor({ profile, today, progress }) {
     {
       role: "assistant",
       content:
-        "👋 Hi! I’m your Mechanical Engineering mentor for UPSC ESE & GATE ME. Ask for plans, topic priorities, PYQ strategy, or revision tips.",
+        "👋 Hi! I’m your Mechanical Engineering mentor for UPSC ESE & GATE ME. Ask for plans, priorities, PYQs, or formula drills.",
     },
   ]);
   const [error, setError] = useState("");
@@ -19,21 +19,19 @@ export default function AIAdvisor({ profile, today, progress }) {
   }, [history, loading, error]);
 
   const systemPrompt = `
-You are a **Mechanical Engineering AI Mentor** for UPSC ESE (ME) and GATE ME.
-Only discuss Mechanical Engineering: Thermodynamics, Fluid Mechanics, Heat Transfer,
-Strength of Materials, Machine Design, Theory of Machines, Manufacturing, Industrial Engg., Engg. Math.
-Never discuss Netlify, web dev, coding, or unrelated topics.
+You are a Mechanical Engineering AI Mentor for UPSC ESE (ME) and GATE ME.
+Only discuss ME subjects (Thermo, Fluids, Heat Transfer, SOM, Machine Design, TOM, Manufacturing, Math).
+Never discuss Netlify, software, or coding topics.
+When asked for a plan, format strictly:
 
-When asked for a plan, ALWAYS structure responses like:
 Day 1 — …
 Day 2 — …
 Day 3 — …
 
-Keep answers concise (<= 180 words), technical, exam-oriented, with formulas/PYQs/revision targets.
+Keep to ≤ 180 words. Include formulas / PYQs / revision targets. Stay exam-focused.
 `;
 
   const buildUserContext = (query) => {
-    // compact, readable context (plain text, no stringify noise)
     const strengths = (profile?.strengths || []).join(", ") || "—";
     const weaknesses = (profile?.weaknesses || []).join(", ") || "—";
     const level = profile?.level || "intermediate";
@@ -47,15 +45,15 @@ Profile:
 - Strengths: ${strengths}
 - Weaknesses: ${weaknesses}
 - Daily Hours: ${hours}
-- Target: ${target}
+- Target Exam: ${target}
 - Exam Date: ${date}
 
-Today’s auto-plan blocks (titles only):
+Blocks today:
 ${(today?.blocks || []).map((b, i) => `  ${i + 1}. ${b.title} (${b.type}, ${b.duration} min)`).join("\n") || "  —"}
 
-Progress summary:
-- Current Day: ${progress?.day ?? 1}
-- Completed items: ${progress?.completed?.length ?? 0}
+Progress:
+- Day: ${progress?.day ?? 1}
+- Completed: ${(progress?.completed || []).length}
 - Mock scores: ${(progress?.mockScores || []).join(", ") || "—"}
 
 User Query:
@@ -67,13 +65,11 @@ ${query}
     setError("");
     if (!message.trim()) return;
 
-    // add user's message
     setHistory((h) => [...h, { role: "user", content: message }]);
     setInput("");
     setLoading(true);
 
     try {
-      // allow cancellation
       abortRef.current?.abort();
       abortRef.current = new AbortController();
 
@@ -99,8 +95,8 @@ ${query}
       try {
         data = JSON.parse(text);
       } catch {
-        // If upstream returns non-JSON, still show something useful
-        setHistory((h) => [...h, { role: "assistant", content: text || "⚠️ Upstream returned non-JSON." }]);
+        // If server sent non-JSON, show it plainly so user sees something useful
+        setHistory((h) => [...h, { role: "assistant", content: text || "⚠️ Unexpected response. Please retry." }]);
         return;
       }
 
@@ -108,13 +104,14 @@ ${query}
         data?.choices?.[0]?.message?.content ||
         data?.message?.content ||
         data?.error?.message ||
-        "⚠️ I couldn’t generate a response. Try again.";
+        text ||
+        "⚠️ Please retry.";
       setHistory((h) => [...h, { role: "assistant", content: reply }]);
     } catch (e) {
       if (e.name === "AbortError") {
         setHistory((h) => [...h, { role: "assistant", content: "⏹️ Stopped." }]);
       } else {
-        setError("❌ Network or server error. Please try again.");
+        setError("❌ Network or server error. Try again.");
       }
     } finally {
       setLoading(false);
@@ -130,7 +127,7 @@ ${query}
       {
         role: "assistant",
         content:
-          "👋 Hi! I’m your Mechanical Engineering mentor for UPSC ESE & GATE ME. Ask for plans, topic priorities, PYQ strategy, or revision tips.",
+          "👋 Hi! I’m your Mechanical Engineering mentor for UPSC ESE & GATE ME. Ask for plans, priorities, PYQs, or formula drills.",
       },
     ]);
     setError("");
@@ -139,9 +136,9 @@ ${query}
 
   const quickPrompts = [
     "Give me a 3-day plan to strengthen Fluid Mechanics.",
-    "I’m weak in Machine Design and SOM — prioritize scoring topics for 10 days.",
-    "With 20 days left for GATE ME, create a daily micro-plan (4h/day).",
-    "List must-know formulas in Thermodynamics with a short practice drill.",
+    "I’m weak in Machine Design — 20 days left. What should I prioritize?",
+    "Thermodynamics formulas revision in 2 days with PYQs.",
+    "4 hours/day for 10 days — make a micro-plan for SOM + TOM.",
   ];
 
   return (
@@ -180,7 +177,7 @@ ${query}
       </div>
 
       <div className="text-xs text-white/50">
-        Tip: Be specific about weaknesses, remaining days, and daily hours for sharper plans.
+        Tip: Include weaknesses, remaining days, and daily hours for sharper plans.
       </div>
     </div>
   );
