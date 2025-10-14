@@ -1,16 +1,18 @@
 // netlify/functions/chat.js
 export default async (event) => {
   try {
-    // Read body safely
-    const rawBody = typeof event.body === "string" ? event.body : JSON.stringify(event.body || {});
+    // Safely get raw body (string)
+    const rawBody =
+      typeof event.body === "string" ? event.body : JSON.stringify(event.body || {});
     if (!rawBody || rawBody === "{}") {
-      const content = "I didn’t receive any input. Please ask your Mechanical Engineering question again.";
+      const content = "I didn’t receive any input. Please re-ask your Mechanical Engineering question.";
       return new Response(JSON.stringify({ choices: [{ message: { role: "assistant", content } }] }), {
         headers: { "Content-Type": "application/json" },
         status: 200
       });
     }
 
+    // Parse JSON
     let body;
     try {
       body = JSON.parse(rawBody);
@@ -22,7 +24,12 @@ export default async (event) => {
       });
     }
 
-    const { messages, model = "openai/gpt-4o-mini", max_tokens = 400, temperature = 0.6 } = body || {};
+    const {
+      messages,
+      model = "openai/gpt-4o-mini",
+      max_tokens = 400,
+      temperature = 0.6
+    } = body || {};
 
     if (!process.env.OPENROUTER_API_KEY) {
       const content = "Server is missing OPENROUTER_API_KEY. Set it in Netlify → Site settings → Environment variables.";
@@ -33,7 +40,7 @@ export default async (event) => {
     }
 
     if (!Array.isArray(messages) || messages.length === 0) {
-      const content = "No messages were provided. Please ask your Mechanical Engineering query again.";
+      const content = "No messages were provided. Please re-ask your Mechanical Engineering question.";
       return new Response(JSON.stringify({ choices: [{ message: { role: "assistant", content } }] }), {
         headers: { "Content-Type": "application/json" },
         status: 200
@@ -58,36 +65,31 @@ export default async (event) => {
 
     const raw = await upstream.text();
 
-    // Try to parse normal response
+    // Try to parse; if not JSON, still return a friendly message
     try {
       const data = JSON.parse(raw);
-      // Even if upstream errored, try to surface a readable message
       if (!upstream.ok) {
         const content =
           data?.error?.message ||
-          "Upstream model error. Please retry your Mechanical Engineering question.";
+          "The model returned an error. Please retry your Mechanical Engineering question.";
         return new Response(JSON.stringify({ choices: [{ message: { role: "assistant", content } }] }), {
           headers: { "Content-Type": "application/json" },
           status: 200
         });
       }
-      // Success — pass through
+      // Success passthrough
       return new Response(JSON.stringify(data), {
         headers: { "Content-Type": "application/json" },
         status: 200
       });
     } catch {
-      // Non-JSON from upstream — still respond normally
-      const content =
-        raw?.slice(0, 400) ||
-        "Received an unexpected response from the model. Please try again.";
+      const content = raw?.slice(0, 400) || "Unexpected response from the model. Please try again.";
       return new Response(JSON.stringify({ choices: [{ message: { role: "assistant", content } }] }), {
         headers: { "Content-Type": "application/json" },
         status: 200
       });
     }
   } catch (err) {
-    // Last-resort safety net
     const content = `Server error: ${err?.message || "unknown"}. Please try again.`;
     return new Response(JSON.stringify({ choices: [{ message: { role: "assistant", content } }] }), {
       headers: { "Content-Type": "application/json" },
