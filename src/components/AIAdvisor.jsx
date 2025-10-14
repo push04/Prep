@@ -1,73 +1,98 @@
-import React, { useState } from 'react'
+import React, { useState } from "react";
 
 export default function AIAdvisor({ profile, today, progress }) {
-  const [input, setInput] = useState("")
-  const [loading, setLoading] = useState(false)
+  const [input, setInput] = useState("");
+  const [loading, setLoading] = useState(false);
   const [history, setHistory] = useState([
-    { role: 'assistant', content: "Tell me your hurdles today. I’ll tweak your plan, recommend targeted problems, and give revision micro-goals." }
-  ])
+    {
+      role: "assistant",
+      content:
+        "👋 Hi! I’m your AI mentor. Tell me your hurdles today — I’ll craft a custom plan, recommend key topics, and revision micro-goals.",
+    },
+  ]);
 
   const ask = async (customPrompt) => {
-    const message = customPrompt || input
-    if (!message.trim()) return
-    setLoading(true)
-    setHistory(h => [...h, { role: 'user', content: message }])
-    setInput("")
+    const message = customPrompt || input.trim();
+    if (!message) return;
+    setInput("");
+    setLoading(true);
+    setHistory((h) => [...h, { role: "user", content: message }]);
+
     try {
-      const res = await fetch('/.netlify/functions/chat', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      const res = await fetch("/.netlify/functions/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
+          model: "openai/gpt-4o-mini",
           messages: [
             {
               role: "system",
-              content:
-                `You are an expert mentor for UPSC ESE (Mechanical) and GATE (ME).
-                 Create personal, day-by-day strategies rooted in mechanical engineering syllabi.
-                 Consider: profile (strengths, weaknesses, level, exam date, daily hours),
-                 today's blocks, progress history, and standard topic weightage.
-                 Keep answers crisp with bulleted steps, 90-150 words where possible.`
+              content: `You are an expert mechanical engineering mentor for UPSC ESE and GATE ME.
+              Analyze the user's profile, progress, and today's plan to provide actionable advice.
+              Focus on concise, motivating, and technical insights in under 150 words.`,
             },
-            { role: "user", content: JSON.stringify({ profile, today, progress, query: message }) }
-          ]
-        })
-      })
-      const data = await res.json()
+            {
+              role: "user",
+              content: JSON.stringify({
+                profile,
+                today,
+                progress,
+                query: message,
+              }),
+            },
+          ],
+        }),
+      });
+
+      const data = await res.json();
       const text =
         data?.choices?.[0]?.message?.content ||
-        data?.message || "I couldn’t generate a response. Try again."
-      setHistory(h => [...h, { role: 'assistant', content: text }])
+        data?.error?.message ||
+        "⚠️ I couldn’t generate a response. Try again.";
+
+      setHistory((h) => [...h, { role: "assistant", content: text }]);
     } catch (e) {
-      setHistory(h => [...h, { role: 'assistant', content: "Network or API error. Please retry." }])
+      console.error("AIAdvisor error:", e);
+      setHistory((h) => [
+        ...h,
+        { role: "assistant", content: "❌ Network or server error. Please try again." },
+      ]);
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   return (
     <div className="space-y-3">
       <div className="h-56 overflow-auto pr-2 space-y-2">
         {history.map((m, i) => (
-          <div key={i} className={`${m.role === 'assistant' ? 'bg-white/5' : 'bg-white/0'} p-2 rounded-lg text-sm`}>
-            <div className="text-white/70">{m.content}</div>
+          <div
+            key={i}
+            className={`${
+              m.role === "assistant" ? "bg-white/5" : "bg-white/0"
+            } p-2 rounded-lg text-sm`}
+          >
+            <div className="text-white/80">{m.content}</div>
           </div>
         ))}
       </div>
+
       <div className="flex gap-2">
         <input
           className="input"
-          placeholder="Ask for a micro-plan, topic sequence, or revision drills…"
+          placeholder="Ask for topic advice, plan tuning, or focus tips..."
           value={input}
-          onChange={e=>setInput(e.target.value)}
-          onKeyDown={e=>e.key==='Enter' && ask()}
+          onChange={(e) => setInput(e.target.value)}
+          onKeyDown={(e) => e.key === "Enter" && ask()}
         />
-        <button className="btn" onClick={()=>ask()} disabled={loading}>
-          {loading ? 'Thinking…' : 'Ask'}
+        <button className="btn" onClick={() => ask()} disabled={loading}>
+          {loading ? "Thinking…" : "Ask"}
         </button>
       </div>
+
       <div className="text-xs text-white/50">
-        Tip: Try “I’m weak in Fluid Mechanics & Machine Design, 20 days left—prioritize scoring topics.”
+        💡 Example: “I’m weak in Machine Design, 20 days left — make me a 3-day micro-plan.”
       </div>
     </div>
-  )
+  );
 }
